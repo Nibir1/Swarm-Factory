@@ -1,0 +1,6 @@
+@SwarmFactory.TwinAPI_HostAddress = http://localhost:5182
+
+GET {{SwarmFactory.TwinAPI_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
