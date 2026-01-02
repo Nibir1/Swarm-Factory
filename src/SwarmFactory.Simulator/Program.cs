@@ -1,52 +1,88 @@
 ﻿using System.Text;
-using Microsoft.Extensions.Configuration; // Add this
+using Microsoft.Extensions.Configuration; 
 using Azure.Messaging.EventHubs;
 using Azure.Messaging.EventHubs.Producer;
 using Newtonsoft.Json;
 
 // 1. BUILD CONFIGURATION
 var config = new ConfigurationBuilder()
-    .SetBasePath(Directory.GetCurrentDirectory())
+    .SetBasePath(AppContext.BaseDirectory) 
     .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
     .Build();
 
 string connectionString = config["EventHubConnection"] 
-    ?? throw new InvalidOperationException("Missing EventHubConnection in appsettings.json");
+    ?? throw new InvalidOperationException("Missing EventHubConnection");
 string eventHubName = config["EventHubName"] 
     ?? throw new InvalidOperationException("Missing EventHubName");
-
-// --------------------------------------------------------
-// SIMULATION DATA
-// --------------------------------------------------------
-var machineIds = new[] { 
-    Guid.Parse("bd973b4f-3322-4374-b65e-2ce232be8433"), // Extruder-Alpha (from your Phase 3 test)
-    Guid.NewGuid(), 
-    Guid.NewGuid() 
-};
-
-var random = new Random();
+string apiUrl = "http://localhost:5182"; // TwinAPI URL
 
 Console.WriteLine("🏭 SWARM FACTORY SIMULATOR STARTING...");
-Console.WriteLine($"Target: {eventHubName}");
-Console.WriteLine("Press Ctrl+C to stop.");
+Console.WriteLine($"Target Event Hub: {eventHubName}");
 
-// 1. Create Producer Client
+// 2. FETCH REAL MACHINES (NO GHOSTS)
+Console.WriteLine("🔎 Fetching machine registry from TwinAPI...");
+var machineIds = new List<Guid>();
+
+try 
+{
+    using var httpClient = new HttpClient();
+    var response = await httpClient.GetStringAsync($"{apiUrl}/machines");
+    
+    // Deserialize dynamic to just grab IDs
+    var machines = JsonConvert.DeserializeObject<List<dynamic>>(response);
+    
+    if (machines != null)
+    {
+        foreach (var m in machines)
+        {
+            // Json.NET dynamic object handling
+            string idStr = m.id; 
+            string name = m.name;
+            Console.WriteLine($"   -> Found: {name} ({idStr})");
+            machineIds.Add(Guid.Parse(idStr));
+        }
+    }
+}
+catch (Exception ex)
+{
+    Console.ForegroundColor = ConsoleColor.Red;
+    Console.WriteLine($"❌ CRITICAL: Could not fetch machines from API. Is TwinAPI running?");
+    Console.WriteLine($"   Error: {ex.Message}");
+    Console.ResetColor();
+    return; // Stop app if we can't get real machines
+}
+
+if (machineIds.Count == 0)
+{
+    Console.ForegroundColor = ConsoleColor.Yellow;
+    Console.WriteLine("⚠️ No machines found in database! Please use Swagger to POST /machines first.");
+    Console.ResetColor();
+    return;
+}
+
+Console.WriteLine($"✅ Loaded {machineIds.Count} active machines.");
+Console.WriteLine("🚀 Starting Telemetry Stream. Press Ctrl+C to stop.\n");
+
+// 3. START SIMULATION LOOP
+var random = new Random();
 await using var producerClient = new EventHubProducerClient(connectionString, eventHubName);
 
 while (true)
 {
-    // Create a batch of events
     using EventDataBatch eventBatch = await producerClient.CreateBatchAsync();
 
-    for (int i = 0; i < 10; i++) // Send 10 events per loop
+    for (int i = 0; i < 10; i++) 
     {
-        // 2. Generate Random Telemetry (Matches iot-events.yaml)
-        var isOverheating = random.Next(0, 20) == 0; // 5% chance of overheating
+        // Pick a RANDOM REAL MACHINE from the list
+        var targetMachineId = machineIds[random.Next(machineIds.Count)];
+
+        // Generate Random Telemetry
+        var isOverheating = random.Next(0, 20) == 0; // 5% chance
         var temp = isOverheating ? random.Next(91, 110) : random.Next(60, 85);
 
         var telemetry = new
         {
-            machineId = machineIds[random.Next(machineIds.Length)],
+            machineId = targetMachineId,
             sensorType = "Temperature",
             value = (double)temp,
             unit = "Celsius",
@@ -55,33 +91,25 @@ while (true)
 
         var json = JsonConvert.SerializeObject(telemetry);
         
-        // 3. Add to Batch
-        if (!eventBatch.TryAdd(new EventData(Encoding.UTF8.GetBytes(json))))
-        {
-            // Batch is full
-            break;
-        }
+        if (!eventBatch.TryAdd(new EventData(Encoding.UTF8.GetBytes(json)))) break;
         
-        // Visual log for overheating
         if (isOverheating) 
         {
             Console.ForegroundColor = ConsoleColor.Red;
-            Console.WriteLine($"[ALERT] Generating HIGH TEMP: {temp}°C");
+            Console.WriteLine($"[ALERT] {targetMachineId} TEMP: {temp}°C");
             Console.ResetColor();
         }
     }
 
-    // 4. Send Batch to Azure
     try 
     {
         await producerClient.SendAsync(eventBatch);
-        Console.Write("."); // Heartbeat dot
+        Console.Write("."); 
     }
     catch (Exception ex)
     {
         Console.WriteLine($"Error sending batch: {ex.Message}");
     }
 
-    // Throttle (Sleep 1 second)
     await Task.Delay(1000);
 }
