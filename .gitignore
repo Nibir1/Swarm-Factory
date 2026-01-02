@@ -59,3 +59,9 @@ __queuestorage__
 __azurite_db*
 AzuriteConfig
 *.log
+
+# Security: Ignore local configuration files
+appsettings.Development.json
+appsettings.json
+local.settings.json
+*.env

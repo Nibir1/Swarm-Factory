@@ -1,14 +1,19 @@
 ﻿using System.Text;
+using Microsoft.Extensions.Configuration; // Add this
 using Azure.Messaging.EventHubs;
 using Azure.Messaging.EventHubs.Producer;
 using Newtonsoft.Json;
 
-// --------------------------------------------------------
-// CONFIGURATION (Hardcoded for Simplicity)
-// --------------------------------------------------------
-// Get this from your 'az eventhubs ...' command or Azure Portal
-const string connectionString = "<YOUR_EVENT_HUBS_NAMESPACE_CONNECTION_STRING>";
-const string eventHubName = "telemetry"; 
+// 1. BUILD CONFIGURATION
+var config = new ConfigurationBuilder()
+    .SetBasePath(Directory.GetCurrentDirectory())
+    .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
+    .Build();
+
+string connectionString = config["EventHubConnection"] 
+    ?? throw new InvalidOperationException("Missing EventHubConnection in appsettings.json");
+string eventHubName = config["EventHubName"] 
+    ?? throw new InvalidOperationException("Missing EventHubName");
 
 // --------------------------------------------------------
 // SIMULATION DATA
