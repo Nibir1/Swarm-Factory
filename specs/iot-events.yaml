@@ -1,0 +1,61 @@
+asyncapi: 2.6.0
+info:
+  title: SwarmFactory IoT Events
+  version: 1.0.0
+  description: |
+    Defines the telemetry stream for the manufacturing floor.
+    Transported via Azure Event Hubs (AMQP/Kafka).
+
+channels:
+  factory/telemetry:
+    description: High-frequency sensor readings from machines.
+    publish:
+      summary: Machine sends telemetry
+      operationId: publishTelemetry
+      message:
+        $ref: '#/components/messages/TelemetryReading'
+    subscribe:
+      summary: Cloud processes telemetry
+      operationId: consumeTelemetry
+      message:
+        $ref: '#/components/messages/TelemetryReading'
+
+components:
+  messages:
+    TelemetryReading:
+      name: TelemetryReading
+      title: Sensor Telemetry
+      summary: A single data point from a machine sensor.
+      contentType: application/json
+      payload:
+        $ref: '#/components/schemas/TelemetryPayload'
+
+  schemas:
+    TelemetryPayload:
+      type: object
+      required:
+        - machineId
+        - sensorType
+        - value
+        - timestamp
+      properties:
+        machineId:
+          type: string
+          format: uuid
+          description: GUID of the machine emitting the data.
+        sensorType:
+          type: string
+          enum: [Temperature, Vibration, Pressure, Speed]
+          description: The physical property being measured.
+        value:
+          type: number
+          format: double
+          description: The raw sensor value (e.g., 95.5 degrees).
+        timestamp:
+          type: string
+          format: date-time
+          description: UTC timestamp when the reading was taken.
+        unit:
+          type: string
+          example: "Celsius"
+          description: Measurement unit (metadata).
