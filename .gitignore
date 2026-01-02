@@ -52,3 +52,10 @@ CodeCoverage/
 *.VisualState.xml
 TestResult.xml
 nunit-*.xml
+
+# Azurite (Local Storage Emulator)
+__blobstorage__
+__queuestorage__
+__azurite_db*
+AzuriteConfig
+*.log

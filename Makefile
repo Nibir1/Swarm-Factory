@@ -6,6 +6,7 @@ RESOURCE_GROUP := rg-swarm-factory
 TEMPLATE_FILE := infra/main.bicep
 PARAMETERS_FILE := infra/azure.parameters.json
 COSMOSDB_NAME := cosmos-sf-dev-lbbaa4k3
+EVENTHUB_NAMESPACE := evhns-sf-dev-lbbaa4k3
 
 # Deploy the Bicep template to the specified resource group
 deploy:
@@ -28,5 +29,14 @@ TwinAPI-run:
 	@echo "Running the SwarmFactory.TwinAPI project..."
 	dotnet run --project ./src/SwarmFactory.TwinAPI/SwarmFactory.TwinAPI.csproj --launch-profile TwinAPI
 
+# Retrieve the Event Hubs connection string
+event-hubs-connection-string:
+	@echo "Event Hubs Connection String:"
+	az eventhubs namespace authorization-rule keys list \
+  	--resource-group $(RESOURCE_GROUP) \
+  	--namespace-name $(EVENTHUB_NAMESPACE) \
+  	--name RootManageSharedAccessKey \
+  	--query primaryConnectionString --output tsv
 
-.PHONY: resource-group deploy connection-string TwinAPI-run
+
+.PHONY: resource-group deploy connection-string TwinAPI-run event-hubs-connection-string
