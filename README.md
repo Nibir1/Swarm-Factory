@@ -36,11 +36,11 @@ The solution uses a **Cloud-Native, Event-Driven Architecture (EDA)** optimized 
 
 ```mermaid
 graph TD
-    Sim[IoT Simulator] -->|Telemetry Stream (AMQP)| EH[Azure Event Hubs]
-    EH -->|Trigger| Func[Azure Function (Processor)]
+    Sim[IoT Simulator] -->|Telemetry Stream AMQP| EH[Azure Event Hubs]
+    EH -->|Trigger| Func[Azure Function Processor]
     Func -->|JSON Analysis| Cosmos[Azure Cosmos DB]
     
-    API[TwinAPI (.NET 8)] -->|Read State| Cosmos
+    API[TwinAPI .NET 8] -->|Read State| Cosmos
     
     User[React Dashboard] -->|Polls| API
 ```
