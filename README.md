@@ -10,8 +10,6 @@
 
 > 📺 **[Watch the full end-to-end demo](https://youtu.be/3qrPJuNS0sA)** featuring core functionalities.
 
-<br />
-
 ---
 
 ## AI-Driven Development Methodology
