@@ -6,9 +6,9 @@
 
 **Swarm-Factory** is a cloud-native, event-driven Digital Twin platform for the manufacturing industry. It simulates high-frequency IoT telemetry, processes data streams in real-time using Serverless functions, and visualizes fleet status in a "Mission Control" React dashboard.
 
-[![Swarm-Factory Demo](https://img.youtube.com/vi/3qrPJuNS0sA/maxresdefault.jpg)](https://youtu.be/3qrPJuNS0sA)
+[![Swarm-Factory Demo](https://img.youtube.com/vi/q8-icp8NDNw/maxresdefault.jpg)](https://youtu.be/q8-icp8NDNw)
 
-> 📺 **[Watch the full end-to-end demo](https://youtu.be/3qrPJuNS0sA)** featuring core functionalities.
+> 📺 **[Watch the full end-to-end demo](https://youtu.be/q8-icp8NDNw)** featuring core functionalities.
 
 ---
 
@@ -195,4 +195,3 @@ The function cannot connect to the local storage emulator.
 ---
 
 **Architect:** Nahasat Nibir
-**License:** MIT
