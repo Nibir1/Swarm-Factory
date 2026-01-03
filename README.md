@@ -1,10 +1,16 @@
-# Swarm-Factory: AI-Architected Digital Twin Platform
+# Swarm-Factory | AI-Architected Digital Twin Platform
 
 ![Status](https://img.shields.io/badge/status-active-success)
 ![Methodology](https://img.shields.io/badge/methodology-Spec--Driven_%7C_Agentic--Swarm-purple)
 ![Tech Stack](https://img.shields.io/badge/azure-.NET%208-blue)
 
 **Swarm-Factory** is a cloud-native, event-driven Digital Twin platform for the manufacturing industry. It simulates high-frequency IoT telemetry, processes data streams in real-time using Serverless functions, and visualizes fleet status in a "Mission Control" React dashboard.
+
+[![Swarm-Factory Demo](https://img.youtube.com/vi/3qrPJuNS0sA/maxresdefault.jpg)](https://youtu.be/3qrPJuNS0sA)
+
+> 📺 **[Watch the full end-to-end demo](https://youtu.be/3qrPJuNS0sA)** featuring core functionalities.
+
+<br />
 
 ---
 
