@@ -1,40 +1,56 @@
-# Swarm-Factory | AI-Architected Digital Twin Platform
-
-![Status](https://img.shields.io/badge/status-active-success)
-![Methodology](https://img.shields.io/badge/methodology-Spec--Driven_%7C_Agentic--Swarm-purple)
-![Tech Stack](https://img.shields.io/badge/azure-.NET%208-blue)
-
-**Swarm-Factory** is a cloud-native, event-driven Digital Twin platform for the manufacturing industry. It simulates high-frequency IoT telemetry, processes data streams in real-time using Serverless functions, and visualizes fleet status in a "Mission Control" React dashboard.
+# Swarm-Factory: Event-Driven Digital Twin Platform
 
 [![Swarm-Factory Demo](https://img.youtube.com/vi/q8-icp8NDNw/maxresdefault.jpg)](https://youtu.be/q8-icp8NDNw)
 
-> 📺 **[Watch the full end-to-end demo](https://youtu.be/q8-icp8NDNw)** featuring core functionalities.
+> 📺 **[Watch the Architectural Demo](https://youtu.be/q8-icp8NDNw)** featuring real-time telemetry processing, Serverless scale-out, and Mission Control visualization.
+
+![Status](https://img.shields.io/badge/Status-Active_Prototype-success?style=for-the-badge)
+![Architecture](https://img.shields.io/badge/Architecture-Event%20Driven%20(EDA)-blueviolet?style=for-the-badge)
+![Cloud](https://img.shields.io/badge/Cloud-Azure_PaaS-0078D4?style=for-the-badge)
+![IAC](https://img.shields.io/badge/Infra-Bicep_IaC-orange?style=for-the-badge)
+
+**Swarm-Factory** is a cloud-native Reference Architecture for Industrial IoT (IIoT). It demonstrates how to decouple high-velocity data ingestion from user-facing dashboards using an **Event-Driven Architecture (EDA)** on Azure.
 
 ---
 
-## AI-Driven Development Methodology
-> **Note for Reviewers:** This project demonstrates an **AI-First Architecture** approach, moving beyond simple code generation to **Spec-Driven Development (SDD)** and **Agentic Workflows**.
+## 1. Executive Summary & Business Value
 
-The "AI" in this project is the **Architectural Process itself**. Instead of manually writing boilerplate, the development followed a strict "Human-in-the-Loop" Swarm Architecture:
+This platform addresses the core challenge of "Industry 4.0": Bridging the gap between Operational Technology (OT) and Information Technology (IT).
 
-### 1. Spec-Driven Core (The "Source of Truth")
-Before a single line of C# or TypeScript was written, the entire system behavior was locked down using industry-standard contracts:
-* **OpenAPI 3.0 (`specs/factory-api.yaml`):** Defines the rigid schema for Machine State and Alerts.
-* **AsyncAPI 2.6 (`specs/iot-events.yaml`):** Defines the binary payload structure for the high-frequency Telemetry Stream.
-
-### 2. Agentic Swarm Workflow
-We treated the implementation as a task for specialized AI Agents, orchestrated by the Architect:
-
-| Agent Role | Input Context | Output Artifact | Result |
-| :--- | :--- | :--- | :--- |
-| **Backend Agent** | OpenAPI Spec + .NET 8 Patterns | `SwarmFactory.TwinAPI` | **Type-Safe Models:** C# Records generated strictly from YAML schemas. |
-| **Infra Agent** | Azure Constraints + AsyncAPI | `infra/main.bicep` | **Infrastructure as Code:** Zero-click deployment of Event Hubs & Cosmos DB. |
-| **Frontend Agent** | OpenAPI Schema + Material UI | `frontend/src/types.ts` | **Contract Compliance:** TS Interfaces perfectly matching the Backend. |
-| **QA Agent** | Telemetry Spec + Load Patterns | `SwarmFactory.Simulator` | **Smart Simulation:** Load generator that respects strict data contracts. |
+| KPI | The Problem | Swarm-Factory Solution |
+| :--- | :--- | :--- |
+| **Data Latency** | SQL databases lock up when ingesting 10k+ sensor readings/sec. | **Event Hubs + Serverless** decoupling allows ingestion of millions of events without impacting dashboard performance. |
+| **Scalability** | Monolithic backends crash during "shift changes" or spikes. | **Azure Functions** scale horizontally (0 to N instances) based on event pressure, paying only for compute used. |
+| **Governance** | IoT payloads drift over time, breaking downstream apps. | **Spec-Driven Development** (OpenAPI + AsyncAPI) enforces rigid data contracts before code is written. |
 
 ---
 
-## Technical Architecture
+## 2. System Architecture (C4 Model)
+
+We use the C4 model to illustrate the "Hot Path" (Telemetry) vs. the "Cold Path" (State Management).
+
+### Level 1: System Context
+The boundary between the physical factory floor and the Azure Cloud.
+
+```mermaid
+graph LR
+    Factory[Physical Factory] -- "AMQP / MQTT (High Velocity)" --> Ingress[Azure Event Hubs]
+    User[Plant Manager] -- "HTTPS" --> Dash[Mission Control Dashboard]
+    
+    subgraph "Azure Cloud Boundary"
+        Ingress --> Proc[Stream Processor]
+        Proc --> DB[(Cosmos DB NoSQL)]
+        Dash --> API[Digital Twin API]
+        API --> DB
+    end
+    
+    style Factory stroke:#333,stroke-width:2px
+    style User stroke:#333,stroke-width:2px
+    style Ingress stroke:#333,stroke-width:2px
+    style DB stroke:#333,stroke-width:2px
+```
+
+### Level 2: Technical Architecture
 
 The solution uses a **Cloud-Native, Event-Driven Architecture (EDA)** optimized for Azure PaaS.
 
@@ -49,12 +65,59 @@ graph TD
     User[React Dashboard] -->|Polls| API
 ```
 
+---
+
+## 3. Architecture Decision Records (ADR)
+
+Strategic technology choices for high-throughput scenarios.
+
+| Component | Decision | Alternatives Considered | Justification (The "Why") |
+| :--- | :--- | :--- | :--- |
+| **Ingestion** | **Azure Event Hubs** | RabbitMQ, HTTP REST | **Throughput:** Event Hubs is built for log-based streaming (millions/sec) with partitioning, whereas RabbitMQ is better for complex routing. HTTP is synchronous and would couple the sensors to the backend. |
+| **Database** | **Cosmos DB (NoSQL)** | Azure SQL (Relational) | **Write Speed:** We need sub-10ms writes for telemetry. The schema-less nature allows sensors to add new metrics (e.g., "Vibration_Z") without running database migrations. |
+| **Compute** | **Azure Functions (Isolated)** | Kubernetes (AKS) | **Ops Burden:** For a sporadic workload (factories turn off at night), Serverless offers "Scale-to-Zero" cost efficiency without the overhead of managing K8s nodes. |
+
+---
+
+## 4. Cost Modeling (FinOps)
+
+Cloud cost projection for a medium-sized factory (100 Machines, 1Hz frequency).
+
+**Scenario:** 100 machines sending 1 message/sec = 8.6M messages/day.
+
+| Resource | Unit Cost | Monthly Est. | Optimization Strategy |
+| :--- | :--- | :--- | :--- |
+| **Event Hubs** | $0.03/million events | ~$10.00 | Used "Basic" tier; can upgrade to "Standard" only if >1 Consumer Group is needed. |
+| **Azure Functions** | $0.20/million executions | ~$2.00 | **Batch Processing:** Configured function to grab batch_size=100 events per execution, reducing billable invocations by 99%. |
+| **Cosmos DB** | 400 RU/s (Autoscale) | ~$24.00 | **TTL (Time-To-Live):** Telemetry data auto-deletes after 7 days to keep storage costs flat. |
+
+---
+
+## 5. Reliability & Security Strategy
+
+### Failure Handling
+* **Poison Messages:** If a telemetry packet is malformed, the Azure Function does not crash. It moves the packet to a "Dead Letter Queue" (DLQ) blob storage for manual inspection, ensuring the stream never blocks.
+* **Throttling:** The API implements "Rate Limiting" to prevent the Dashboard from consuming too many RUs (Request Units) from the database during high traffic.
+
+### Security Posture
+* **Connection Strings:** No secrets in code. Uses `local.settings.json` for dev and **Azure Key Vault** references for production.
+* **Network Security:** Event Hub is configured to only accept traffic from whitelisted IP ranges (Simulating a Factory VPN Gateway).
+
+---
+
+## 6. Implementation & "AI-First" Methodology
+
+This project utilized an **Agentic Swarm** workflow to generate boilerplate code from contracts.
+
+1.  **Spec-First:** We defined `specs/factory-api.yaml` (OpenAPI) and `specs/iot-events.yaml` (AsyncAPI) first.
+2.  **Agent Generation:** AI Agents generated the C# DTOs and TypeScript interfaces directly from these YAML files, ensuring the Frontend and Backend never drifted out of sync.
+
 ### Tech Stack
-* **Core:** .NET 8 (C#)
-* **Compute:** Azure Functions (Isolated Worker), ASP.NET Core Web API
-* **Data:** Azure Cosmos DB (NoSQL), Azure Event Hubs (Kafka/AMQP)
-* **Frontend:** React (Vite) + TypeScript + Material UI (MUI v6)
-* **Infrastructure:** Azure Bicep (IaC)
+* **Core:** .NET 8 (C#), ASP.NET Core
+* **Serverless:** Azure Functions V4 (Isolated Worker)
+* **Data:** Azure Cosmos DB, Event Hubs
+* **Frontend:** React (Vite), Material UI v6
+* **IaC:** Azure Bicep
 
 ---
 
@@ -194,4 +257,5 @@ The function cannot connect to the local storage emulator.
 
 ---
 
-**Architect:** Nahasat Nibir
+Architected by **Nahasat Nibir**
+*Senior AI & Cloud Solutions Architect*
